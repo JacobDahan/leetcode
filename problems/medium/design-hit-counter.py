@@ -15,19 +15,19 @@ class HitCounter:
     # Specifically, for timestamp N, only hits at timestamp M (M >= N - 300) are included.
     def getHits(self, timestamp: int) -> int:
         left, right = 0, len(self._counter) - 1
-        target_ts = timestamp - 300
+        target_ts = timestamp - 300 # 1
+
         while left <= right:
-            idx = (left + right) // 2
-            ts = self._counter[idx]
+            idx = (right - left) // 2 + left # 0
+            ts = self._counter[idx] # 1
             if ts <= target_ts:
-                # Timestamp falls out of our search window
+                # Timestamp is outside of or equal to the window, look to the right
                 left = idx + 1
             else:
-                # Timestamp is within our search window
+                # Timestamp is within the window, look to the left
                 right = idx - 1
-
-        return len(self._counter) - left
         
+        return len(self._counter) - left 
 
 
 # Your HitCounter object will be instantiated and called as such:
