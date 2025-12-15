@@ -37,30 +37,29 @@ class Solution:
                 pivot = mid
                 break
         
-        # Optimally, we can do this in a single binary search with a shift accounting for the pivot
+        # We can do this in a single binary search with a shift accounting for the pivot
+        # Our array looks something like [4,5,6,7,0,1,2,3], with a pivot at 0
+        # That means that we turned indices [0,1,2,3,4,5,6,7] into [4,5,6,7,0,1,2,3]
+        # How can we translate an index in the rotated array to the original array?
+        # If we take idx i in the original array, we simply have to:
+        # 1. Take the original index i
+        # 2. Add a "shift" to it (the number of positive elements required to move it back to its original location)
+        # --> For the pivot index, this is trivially n - pivot
+        # --> ex: in an array of 8 elements with pivot index 5, the shift is (8 - 5) = 3
+        # 3. To account for "spill-over", run the final index through a modulo n
 
-        # To start, just run two binary searches along [0, pivot - 1] and [pivot, n - 1]
-        left, right = 0, pivot - 1
+        shift = len(nums) - pivot
+        left = (pivot + shift) % len(nums)
+        right = (pivot - 1 + shift) % len(nums)
+
         while left <= right:
-            mid = left + ((right - left) // 2)
-            val = nums[mid]
+            mid = left + ((right - left) // 2) # this is an index is our transformed space
+            val = nums[(mid - shift) % len(nums)] # transform that index back into the input form
             if val > target:
                 right = mid - 1
             elif val < target:
                 left = mid + 1
             else:
-                return mid
-        
-        # If we didn't find anything, the value must be in [pivot, n - 1] (or nowhere at all!)
-        left, right = pivot, len(nums) - 1
-        while left <= right:
-            mid = left + ((right - left) // 2)
-            val = nums[mid]
-            if val > target:
-                right = mid - 1
-            elif val < target:
-                left = mid + 1
-            else:
-                return mid
+                return (mid - shift) % len(nums)
             
         return -1
