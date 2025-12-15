@@ -18,28 +18,29 @@ class Solution:
             mid = left + ((right - left) // 2)
             val = nums[mid]
 
-            # If the value is greater than our target value...
-            if val > target:
-                # Ordinarily we'd look to the left, but here we don't have a guarantee that the list to the left
-                # is still monotonically increasing
-
-                # If the left-most number is smaller than our current number, we are guaranteed that the
-                # LHS of the equation is sorted. If the target is smaller than those values, there is no answer
-                # in that part of the array, so look to the right.
-                if nums[left] <= val and target < nums[left]:
-                    left = mid + 1
-                # If the left hand side is not sorted, the right hand side must be sorted
-                # and all values to the right are even greater than the current value, so there is no possible
-                # answer in that portion of the array
-                else:
-                    right = mid - 1
-            # If the value is less than our target value...
-            elif val < target:
-                if nums[right] >= val and target > nums[right]:
-                    right = mid - 1
-                else:
-                    left = mid + 1
-            else:
+            # Thank goodness, we found it!
+            if val == target:
                 return mid
+
+            # We don't have a match, so we need to figure out what portion of the remaining problem space
+            # is still in play. We can only make any assertions about the sorted bits of the problem space,
+            # so check which side that is...
+
+            # If the value is greater than the left-most item, we know the LHS is sorted
+            if val >= nums[left]:
+                # The target is greater than the value -- there is no possible answer on the LHS, so discard
+                # Similarly, the target may be less than the smallest element on the LHS, so discard
+                if val < target or target < nums[left]:
+                    left = mid + 1
+                else:
+                    right = mid - 1
+            # Otherwise, the RHS is sorted
+            else:
+                # The target is less than the value -- there is no possible answer on the RHS, so discard
+                # Similarly, the target may be greater than the largest element on the RHS, so discard
+                if val > target or target > nums[right]:
+                    right = mid - 1
+                else:
+                    left = mid + 1
             
         return -1
