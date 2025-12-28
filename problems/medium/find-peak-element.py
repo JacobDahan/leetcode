@@ -1,32 +1,36 @@
 class Solution:
-    # Given a 0-indexed integer array nums, find a peak element, and return its index. 
-    # If the array contains multiple peaks, return the index to any of the peaks.
     def findPeakElement(self, nums: List[int]) -> int:
-        # How can we do this in O(log n)?
-        # - We need to cut the list down in half each time
-        # - Because the list has no sorting, we have no way of saying definitively that one half
-        #   cannot hold the answer
-        # - However, we CAN say that one half DOES hold the answer:
-        #   - For any given idx i such that nums[i] < nums[i+1], a peak must exist to the right. Why?
-        #       - The elements to the right may be monotonically increasing (j > i, nums[j] > nums[i]), such that
-        #         at the very least the last element nums[j] (j == len(n) - 1) is a peak, since
-        #         nums[j] > nums[j - 1] and nums[j] > -inf
-        #       - Else, the elements to the right may at some point decrease (j > i, nums[j] < nums[i]),
-        #         guaranteeing that a peak exists, since nums[i] < nums[j] < nums[k] (k > j > i)
-        #   - For any given idx i such that nums[i] < nums[i-1], a peak must exist to the left, for the opposite reason
+        # Thinking:
+        # - We are asked to do this in O(log n) time, which suggests binary search
+        # - But the array is not sorted, so how can we refine our search at each iteration?
+        # - nums[i] != nums[i + 1] for all valid i.
+        # - What is a local peak:
+        #   - A peak element is an element that is strictly greater than its neighbors.
+        #   - nums[-1] = nums[n] = -∞
+        # - Therefore, for any index i:
+        #   - If nums[i] > nums[i - 1], there must exist a peak [i, n) because either:
+        #       1. nums[i] > nums[i + 1] (i is peak)
+        #       2. nums[j] > nums[i] (j > i, j is peak) -- array is strictly increasing (last element is peak)
+        #          or a standard peak exists to the right of i
+        #   - If nums[i] < nums[i - 1], there must exist a peak [0, i) because either:
+        #       1. nums[i - 1] > nums[i - 2] (i - 1 is peak)
+        #       2. nums[j] > nums[i - 1] (j < i, j is peak) -- array is strictly decreasing (first element is peak)
+        #          or a standard peak exists to the left of j
 
         left, right = 0, len(nums) - 1
+        # We continue until left and right are pointing at the same value, at which point that value must be
+        # our answer
         while left < right:
             mid = left + ((right - left) // 2)
-            peak = nums[mid]
-            gt_right = True if mid + 1 >= len(nums) else (peak > nums[mid + 1])
+            curr = nums[mid]
 
-            if not gt_right:
-                # Right is greater, we are guaranteed to have a peak to the right
+            if mid < len(nums) and curr < nums[mid + 1]:
+                # If nums[i] < nums[i + 1], there must exist a peak (i, n)
+                # Therefore, we drop the left index as a possible answer and discard everything left of it
                 left = mid + 1
             else:
-                # This may be peak, or peak may be to the left
+                # If nums[i] > nums[i + 1], there must exist a peak [0, i]
+                # Therefore, we keep the midpoint and everything to the right of it
                 right = mid
         
         return left
-        
