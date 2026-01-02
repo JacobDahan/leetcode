@@ -15,4 +15,4 @@ leetcode/
 
 ## Progress
 
-**Easy:** 7 | **Medium:** 11 | **Hard:** 0
+**Easy:** 11 | **Medium:** 16 | **Hard:** 0
