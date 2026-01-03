@@ -2,30 +2,30 @@ class MinStack:
 
     def __init__(self):
         self.stack = []
+        self.mins = []
 
     def push(self, val: int) -> None:
-        if self.stack:
-            # Check what the minimum value of the stack was at the *last* element
-            _, min_val = self.stack[-1]
-            # If that value is less than this, store it as the minimum value
-            # Otherwise, store this value as the minimum
-            min_val = min_val if min_val < val else val
-        else:
-            min_val = val
-
-        self.stack.append((val, min_val))
+        # First, append the new value
+        self.stack.append(val)
+        # Next, store the new minimum (if exists)
+        if not self.mins:
+            # If no previous exists, this is definitionally minimum
+            self.mins.append(val)
+        elif val <= self.mins[-1]:
+            # We define a new minimum as any value that is equal to or greater than the previous minimum
+            self.mins.append(val)
 
     def pop(self) -> None:
-        if self.stack:        
-            _ = self.stack.pop()
+        if self.stack:
+            val = self.stack.pop()
+            if val == self.mins[-1]:
+                self.mins.pop()
 
     def top(self) -> int:
-        val, _ = self.stack[-1]
-        return val
+        return self.stack[-1]
 
     def getMin(self) -> int:
-        _, min_val = self.stack[-1]
-        return min_val
+        return self.mins[-1]
         
 
 
