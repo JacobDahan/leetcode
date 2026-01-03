@@ -10,22 +10,28 @@ class MinStack:
         # Next, store the new minimum (if exists)
         if not self.mins:
             # If no previous exists, this is definitionally minimum
-            self.mins.append(val)
-        elif val <= self.mins[-1]:
-            # We define a new minimum as any value that is equal to or greater than the previous minimum
-            self.mins.append(val)
+            self.mins.append((val, 1))
+        elif val < self.mins[-1][0]:
+            # We define a new minimum as any value that is greater than the previous minimum
+            self.mins.append((val, 1))
+        elif val == self.mins[-1][0]:
+            # Val must be equal to the minimum
+            self.mins[-1] = (self.mins[-1][0], self.mins[-1][1] + 1)
 
     def pop(self) -> None:
         if self.stack:
             val = self.stack.pop()
-            if val == self.mins[-1]:
+            min_val, min_count = self.mins[-1]
+            if val == min_val and min_count == 1:
                 self.mins.pop()
+            elif val == min_val:
+                self.mins[-1] = (val, min_count - 1)
 
     def top(self) -> int:
         return self.stack[-1]
 
     def getMin(self) -> int:
-        return self.mins[-1]
+        return self.mins[-1][0]
         
 
 
