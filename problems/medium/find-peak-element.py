@@ -1,36 +1,58 @@
 class Solution:
+    """
+    A peak element is an element that is strictly greater than its neighbors.
+
+    Given a 0-indexed integer array nums, find a peak element, and return its index. 
+    If the array contains multiple peaks, return the index to any of the peaks.
+
+    You may imagine that nums[-1] = nums[n] = -∞. In other words, an element is always considered to 
+    be strictly greater than a neighbor that is outside the array.
+
+    You must write an algorithm that runs in O(log n) time.
+    """
+
     def findPeakElement(self, nums: List[int]) -> int:
-        # Thinking:
-        # - We are asked to do this in O(log n) time, which suggests binary search
-        # - But the array is not sorted, so how can we refine our search at each iteration?
-        # - nums[i] != nums[i + 1] for all valid i.
-        # - What is a local peak:
-        #   - A peak element is an element that is strictly greater than its neighbors.
-        #   - nums[-1] = nums[n] = -∞
-        # - Therefore, for any index i:
-        #   - If nums[i] > nums[i - 1], there must exist a peak [i, n) because either:
-        #       1. nums[i] > nums[i + 1] (i is peak)
-        #       2. nums[j] > nums[i] (j > i, j is peak) -- array is strictly increasing (last element is peak)
-        #          or a standard peak exists to the right of i
-        #   - If nums[i] < nums[i - 1], there must exist a peak [0, i) because either:
-        #       1. nums[i - 1] > nums[i - 2] (i - 1 is peak)
-        #       2. nums[j] > nums[i - 1] (j < i, j is peak) -- array is strictly decreasing (first element is peak)
-        #          or a standard peak exists to the left of j
+        """
+        Observations:
+        - We are asked to SEARCH for an element that matches a predicate in an array
+        - We are asked to execute this search in O(log n) time
+        - These criteria indicate that we should consider binary search
 
-        left, right = 0, len(nums) - 1
-        # We continue until left and right are pointing at the same value, at which point that value must be
-        # our answer
-        while left < right:
-            mid = left + ((right - left) // 2)
-            curr = nums[mid]
+        ... But the array is not sorted! How can we execute binary search?
+        - We need to carefully define our invariants:
+            - A peak is an element i such that nums[i - 1] < nums[i] < nums[i + 1]
+            - An element is considered strictly greater than a neighbor that is outside the array
+            - We are told nums[i] != nums[i + 1] for all valid i
+        - For any given element, then, its neighbors must be greater than or lesser than it:
+            - if both neighbors are less than it, it is the peak, return
+            - if the left neighbor is greater than it, there must exist a leftward peak
+                - Either the left neighbor is peak
+                - ... Or there exists a peak left of it
+                - ... Or it is monotonically increasing towards the boundary, and the boundary is the peak!
+            - if the right neighbor is greater than it, there must exist a rightward peak
+        - So our invariant becomes: We guarantee that a peak exists along [lo, hi]
+        """
+        def is_peak(i):
+            """
+            Returns True if the element at nums[i] is a peak, else False.
+            """
+            gt_left = i == 0 or nums[i] > nums[i - 1]
+            gt_right = i == len(nums) - 1 or nums[i] > nums[i + 1]
+            return gt_left and gt_right
 
-            if mid < len(nums) and curr < nums[mid + 1]:
-                # If nums[i] < nums[i + 1], there must exist a peak (i, n)
-                # Therefore, we drop the left index as a possible answer and discard everything left of it
-                left = mid + 1
-            else:
-                # If nums[i] > nums[i + 1], there must exist a peak [0, i]
-                # Therefore, we keep the midpoint and everything to the right of it
-                right = mid
+        lo, hi = 0, len(nums) - 1 
+        while lo <= hi: # our invariant specifies that a peak exists within this range,
+                        # but still have to check for the peak at each step, and the peak may exist at lo == hi
+            
+            midpoint = lo + (hi - lo) // 2 # Python doesn't risk int overflow, but practice!!
+            
+            if is_peak(midpoint):
+                return midpoint
+            
+            if midpoint > 0 and nums[midpoint] < nums[midpoint - 1]: # there must exist a peak to the left
+                hi = midpoint - 1
+            else: # there must exist a peak to the right
+                lo = midpoint + 1
         
-        return left
+        # unreachable, but let's code defensively...
+        return -1
