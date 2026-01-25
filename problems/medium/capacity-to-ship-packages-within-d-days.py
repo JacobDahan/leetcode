@@ -1,77 +1,107 @@
+from typing import List
+
 class Solution:
     """
     A conveyor belt has packages that must be shipped from one port to another within days days.
 
-    The ith package on the conveyor belt has a weight of weights[i].
+    The ith package on the conveyor belt has a weight of weights[i]. Each day, we load the ship with packages on the conveyor belt (in the order given by weights). We may not load more weight than the maximum weight capacity of the ship.
 
-    Each day, we load the ship with packages on the conveyor belt (in the order given by weights). 
-    We may not load more weight than the maximum weight capacity of the ship.
-
-    Return the least weight capacity of the ship that will result in all the packages on the conveyor belt being shipped within days days.
+    Return the least weight capacity of the ship that will result in all the packages on the conveyor belt being shipped within days days.    
     """
 
     def shipWithinDays(self, weights: List[int], days: int) -> int:
         """
         Task:
-        - We are given an integer array weights where the ith package has weights[i]
-        - Each day, ships are loaded up to (not exceeding) capacity
-        - We are asked to determine the MINIMUM weight capacity of the ship such that ALL the packages can be shipped in days days
+        - We are given an array of packages with weights weights (where the weight of package i is equal to weights[i])
+        - We must load all the packages, IN ORDER, onto a ship that has a specific weight capacity within days days
+        - We are tasked with finding the MINIMUM weight capacity that would allow us to ship all the packages
+        - We may not load more weight in any day than the weight capacity (assume that the ship delivers the packages between days)
 
         Observations:
-        - It is *trivial* (i.e., O(w)) to determine if, for a given weight W, all packages can be shipped in days days
-        - In other words, if we "guess" a weight W, we can easily verify if it is valid
-        - If a ship with weight capacity W can ship all packages in days days, any ship with capacity X, X > W can, too
-        - If a ship with weight capacity W cannot ship all packages in days days, any ship with capacity X, X < W cannot, either
+        - We can easily GUESS a value capacity and evaluate if it is possible to ship all of the packages within days days
+        - The capacity is BOUNDED:
+            - We will NEVER be able to ship the packages if the capacity is smaller than the maximum package weight in weights
+            - We will ALWAYS be able to ship the packages if the capacity is equal to the sum of the package weights
+        - In other words, we have an answer space [max(weights), sum(weights)], which is naturally ordered, and trivial to "guess and check"
+        - This is a perfect use case for binary search (MINIMIZATION, BOUNDARY CONVERGENCE)
 
-        Binary Search:
-        - Taken together, we have a SORTED ANSWER DOMAIN within which we can discard one side of the answer domain at each step,
-          based on trivial (inexpensive) calculations
-        - We are SEARCHING for the FIRST VALUE W to satisfy a predicate, in other words, this is a BOUNDARY SEARCH (minimization)
-          binary search problem
-            - Predicate: Can a ship with capacity W transport all packages in days days?
-            - Invariant: For all W < lo, W does not satisfy the predicate; for all W >= hi, W does satisfy the predicate
-        - But how can we define the bounds for W?
-            - We can never transport all of the packages unless we can hold the heaviest package (W_min = max(weights))
-            - In the worst case, we will need to carry all of the packages in a single day (W_max = sum(weights))
+        Algorithm:
+        - Use binary search to find the minimum capacity along [max(weights), sum(weights)] that satisfies the predicate canDeliverPackages
+        - Predicate: Use a greedy algorithm to deliver maximum weight in each day; when weight surpasses capacity, it must take another day; if the total days
+            is less than or equal to days days, return True, otherwise False
+        - Invariant: All values i, i < lo must NOT satisfy the predicate; all values i, i >= hi MUST satisfy the predicate
+        - Termination: When lo == hi, we have definitionally found the convergence boundary where i is the first value that satisfies the predicate
+        - Put in simple terms: We are looking for the BOUNDARY where the predicate transitions from FALSE to True
+            - We can use binary search because we know that if capacity = c can ship in days days, so can capacity = c + 1;
+              similarly, if capacity = c can NOT ship in days days, capacity = c - 1 CAN NOT EITHER
         """
-
-        lo, hi = max(weights), sum(weights)
-
-        def can_ship_within_days(w):
-            """
-            Utility method to determine if the provided weight satisfies the binary search predicate:
-            Can a ship capable of bearing weight w ship packages of weights weights in days days?
-            """
-            weight_remaining, days_required = w, 1
-            # We know packages are loaded in order and can't be split
-            # Use a greedy algorithm to maximally fill the boat each day
-            # If adding the weight would push us past capacity, we'll require an additional day to ship things
-            for package in weights:
-                if weight_remaining - package < 0:
-                    days_required += 1
-                    weight_remaining = w
-
-                    if days_required > days:
-                        return False # we only have days days, so no way this weight will work!
-            
-                weight_remaining -= package
-
-            # we fit all the packages in d <= days! if we can do it in d days, we are guaranteed we can do it days days
-            return True
-
-        while lo < hi: # we continue searching until lo == hi; given our invariant, we know that we found the boundary where the predicate STARTS becoming true
-                       # because our answer space is monotonically increasing, we are guaranteed this is the minimum value
-            
-            midpoint = lo + (hi - lo) // 2 # Python has no int overflow, but use the correct pattern here for practice
-
-            if can_ship_within_days(midpoint): # because we check this at every iteration, binary search becomes O(p log S) where S = sum(weights) and p = len(weights)
-                # this is a valid answer, but may not be the MINIMUM answer
-                # we know all values greater than midpoint are valid, so there's no reason to keep them in our search space
-                # but we keep this answer in case this IS the boundary where the predicate becomes true
-                hi = midpoint
-            else:
-                # this is not a valid answer, so discard it and any weights less (no ship bearing less can satisfy the predicate)
-                lo = midpoint + 1
+        # first, find the maximum package weight (lo) and sum of package weights (hi) to define our search space
+        lo, hi = 0, 0
+        for weight in weights:
+            lo = max(lo, weight) # no negative package weights, so we'll always find a non-zero package weight
+            hi += weight # increment the sum
         
+        # next, define our predicate evaluator
+        def can_deliver_packages(capacity: int) -> bool:
+            days_loading_packages = 1
+            daily_cargo = 0
 
-        return lo # return the boundary, which is guaranteed to be the minimum value satisfying our predicate
+            for weight in weights:
+                if daily_cargo + weight > capacity:
+                    days_loading_packages += 1 # we've filled the ship for one day, we need to wait untilt he next day to keep loading
+                    daily_cargo = 0 # on the next day, we've loaded nothing
+                
+                if days_loading_packages > days:
+                    return False # return early if we've already exhausted the days we have at hand
+
+                daily_cargo += weight
+
+            return True # we've loaded all the packages and we didn't exhaust the days allowed!
+
+        while lo < hi: # why not equals? because when lo == hi, we've found our boundary -- the invariant guarantees that all values GTE hi are valid answers
+            mid = lo + (hi - lo) // 2 # avoid int overflow (not an issue in Python)
+
+            if can_deliver_packages(mid):
+                # this is a valid solution, but perhaps not the MINIMUM solution
+                # per the invariant, set hi = mid to indicate this may be the answer, but keep searching
+                # remember: if capacity = mid can deliver packages, so can all capacity > mid
+                hi = mid
+            else:
+                # this is NOT a valid solution and must be discarded
+                # remember: if capacity = mid can NOT deliver packages, neither can any capacity < mid
+                lo = mid + 1
+        
+        return lo # lo == hi, and all values i, i >= hi are valid, so this MUST be the MINIMAL valid answer
+
+# Test case: weights = [1,2,3,4,5,6,7,8,9,10], days = 5
+# iter 1: lo = 10, hi = 55, mid = 32 // can_deliver = True
+# iter 2: lo = 10, hi = 32, mid = 21 // can_deliver = True
+# iter 3: lo = 10, hi = 21, mid = 15 // can_deliver = True
+# iter 4: lo = 10, hi = 15, mid = 12 // can_deliver = False
+# iter 5: lo = 13, hi = 15, mid = 14 // can_deliver = False
+# iter 6: lo = hi = 15 // return 15
+
+# Test case: weights = [1,2,3,1,1], days = 4
+# iter 1: lo = 3, hi = 8, mid = 5 // can_deliver = True
+# iter 2: lo = 3, hi = 5, mid = 4 // can_deliver = True
+# iter 3: lo = 3, hi = 4, mid = 3 // can_deliver = True
+# iter 4: lo = hi = 3 // return 3
+
+import pytest
+
+@pytest.mark.parametrize(
+    "weights,days,expected",
+    [
+        ([1,2,3,4,5,6,7,8,9,10], 5, 15),
+        ([1,2,3,1,1], 4, 3),
+        ([3,2,2,4,1,4], 3, 6),
+        ([1000, 1], 2, 1000),
+    ]
+)
+def test_ship_within_days(weights, days, expected):
+    s = Solution()
+    a = s.shipWithinDays(weights, days)
+    assert a == expected
+
+if __name__ == "__main__":
+    pytest.main(['-v','-s'])
